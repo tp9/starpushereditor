@@ -1,16 +1,20 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
-
-import pygame, sys, os
+"""
+A level designer for the game Star Pusher by Al Sweigart from his book
+'Making Games with Python & Pygame'
+http://inventwithpython.com/pygame/chapters/
+"""
+import pygame, sys, os, copy
 from pygame.locals import *
 
 FPS = 30 # frames per second to update the screen
-WINDOWWIDTH = 800 # width of the program's window, in pixels
-WINDOWHEIGHT = 800 # height in pixels
+WINDOWWIDTH = 600 # width of the program's window, in pixels
+WINDOWHEIGHT = 600 # height in pixels
 BOARDWIDTH = 10 # number of tiles per column
 BOARDHEIGHT = 10 # number of tiles per row
 MARGIN = 20
-TILESIZE = 60
+TILESIZE = 50
 
 # set margins
 XMARGIN = int((WINDOWWIDTH - (BOARDWIDTH * TILESIZE)) / 2)
@@ -30,12 +34,14 @@ WALLCOLOR   = YELLOW
 
 
 def main():
-    global DISPLAYSURF
+    global DISPLAYSURF, OBJECTIMAGES, IMAGESDICT, MOUSEIMAGES
     # set initial position of the game window
     os.environ['SDL_VIDEO_WINDOW_POS'] = "40,40"
     pygame.init()
     DISPLAYSURF = pygame.display.set_mode((WINDOWWIDTH, WINDOWHEIGHT))
     pygame.display.set_caption('Star Pusher Editor')
+    saveFile = 'userMaps.txt'
+    currentLvl = 0
     mouseX = 0
     mouseY = 0
     mouseImageX = 0
@@ -49,7 +55,15 @@ def main():
     cameraUp = False
     cameraDown = False
     objectIter = 0
-    mapTiles = [[None] * BOARDHEIGHT for i in range(BOARDWIDTH)]
+    # read map file
+    levels = readLevelsFile(saveFile)
+    if levels == []:
+        currentLvl = 0
+        mapTiles = [[None] * BOARDHEIGHT for i in range(BOARDWIDTH)]
+    else:
+        currentLvl = 1
+        mapTiles = convertToTiles(levels[currentLvl-1])
+    
     # image dictionaries
     OBJECTIMAGES = ['#', '$', '@', '.']
     IMAGESDICT = {'uncovered goal': pygame.image.load('img\RedSelector.png'),
@@ -80,6 +94,7 @@ def main():
                         DISPLAYSURF.blit(IMAGESDICT['princess'], imgRect)
                     elif mapTiles[tileX][tileY] == '.':
                         DISPLAYSURF.blit(IMAGESDICT['uncovered goal'], imgRect)
+                        
         # draw tile outlines
         for x in range(0, (BOARDWIDTH + 1) * TILESIZE, TILESIZE):
             pygame.draw.line(DISPLAYSURF, DARKGRAY, (x + XMARGIN, YMARGIN), 
@@ -87,6 +102,7 @@ def main():
         for y in range(0, (BOARDHEIGHT + 1) * TILESIZE, TILESIZE):
             pygame.draw.line(DISPLAYSURF, DARKGRAY, (XMARGIN, y + YMARGIN), 
                 (WINDOWWIDTH - XMARGIN, y + YMARGIN))
+                
         # event handler
         for event in pygame.event.get():
             if event.type == QUIT:
@@ -98,14 +114,17 @@ def main():
                     sys.exit()
                 elif event.key == K_DELETE:
                     print 'delete level' # reset the level
-                elif event.key == K_n:
-                    print 'new level'
-                elif event.key == K_s:
-                    print 'save file'
-                elif event.key == K_PAGEUP:
+                elif event.key == K_n: # add new level
+                    currentLvl = 0
+                    mapTiles = [[None] * BOARDHEIGHT for i in range(BOARDWIDTH)]
+                elif event.key == K_s: # save current level
+                    printMsg, currentLvl = saveToFile(saveFile, mapTiles, currentLvl)
+                elif event.key == K_PAGEUP: # go to next map
                     print 'previous level'
-                elif event.key == K_PAGEDOWN:
+                elif event.key == K_PAGEDOWN: # go to previous map
                     print 'next level'
+                    currentLvl += 1
+                    mapTiles = convertToTiles(levels[currentLvl-1])
             elif event.type == MOUSEBUTTONUP:
                 if event.button == 5:
                     objectIter -= 1
@@ -131,11 +150,9 @@ def main():
             mouseImageY = mouseY - (MOUSEIMAGES[objectIter].get_height() / 2)
             DISPLAYSURF.blit(MOUSEIMAGES[objectIter], (mouseImageX,mouseImageY))
             if leftButtonClicked:
-                # print 'place item at', tileX, tileY
                 mapTiles[tileX][tileY] = OBJECTIMAGES[objectIter]
                 leftButtonClicked = False
             if rightButtonClicked:
-                # print 'delete item', tileX, tileY
                 mapTiles[tileX][tileY] = None
                 rightButtonClicked = False
                 
@@ -178,7 +195,120 @@ def drawHighlightTile(tilex, tiley):
     left, top = leftTopCoordsTile(tilex, tiley)
     pygame.draw.rect(DISPLAYSURF, HIGHLIGHTCOLOR,
                     (left, top, TILESIZE, TILESIZE), 4)
+
+                    
+def convertToTiles(levelMap):
+    tiles = [[None] * BOARDHEIGHT for i in range(BOARDWIDTH)]
+    for y in range(len(levelMap)):
+        for x in range(len(levelMap[0])):
+            if levelMap[y][x] == ' ':
+                tiles[x][y] = None
+            else:
+                tiles[x][y] = levelMap[y][x]
+    return tiles
+
+                    
+def readLevelsFile(filename):
+    assert os.path.exists(filename), 'Cannot find the level file: %s' % (filename)
+    
+    # read file and store in a list
+    mapFileRead = open(filename, 'r')
+    content = mapFileRead.readlines() + ['\r\n']
+    mapFileRead.close()
+
+    levelMaps = []
+    levelMap = []    
+    for lineNum in range(len(content)):
+       # process each line that was in the level file
+        line = content[lineNum].rstrip('\r\n')
+        if line != '':
+            levelMap.append(line)
+        elif line == '' and len(levelMap) > 0:
+            levelMaps.append(levelMap)
+            levelMap = []
+    return levelMaps
+
+
+def saveToFile(filename, mapTiles, levelNum):
+    '''If levelNum == 0 then add level to end of file
+    '''
+    assert os.path.exists(filename), 'Cannot find the level file: %s' % (filename)
+    
+    # clean up mapTiles
+    newMap = copy.deepcopy(mapTiles)
+    for x in newMap[:]:
+        if set(OBJECTIMAGES).intersection(x) == set([]):
+            newMap.remove(x)
+    tempMap = copy.deepcopy(newMap)
+    if newMap == []:
+        return "Nothing to save"    
+        
+    objectFound = False
+    for row in range(len(newMap[0])):
+        for x in range(len(newMap)):
+            if newMap[x][row] in OBJECTIMAGES:
+                objectFound = True
+                break
+        if objectFound:
+            break
+        else:
+            for i in range(len(newMap)):
+                del tempMap[i][0]
                 
+    # write list to file
+    char = ''
+    isEmptyLine = False
+    newLevel = []
+    line = ''
+    for row in range(len(tempMap[0])):
+        for x in range(len(tempMap)):
+            if x == 0 and tempMap[x][row] == None:
+                isEmptyLine = True
+                break
+            elif tempMap[x][row] == None:
+                char = ' '
+            else:
+                char = tempMap[x][row]
+            # mapFile.write(char)
+            line += char
+        if not isEmptyLine:
+            newLevel.append(line)
+            line = ''
+            # mapFile.write('\n')
+        else:
+            isEmptyLine = False
+    # read file and store in a list
+    levelMaps = readLevelsFile(filename)
+            
+    # write levels to file
+    mapFileWrite = open(filename, 'w')
+    savedLvlNum = levelNum
+    for i, level in enumerate(levelMaps):
+        if levelNum == 0:
+            savedLvlNum = i + 2
+        if levelNum - 1 == i:
+            # write newLevel to file, overwrite previous map
+            for line in newLevel:
+                mapFileWrite.write(line)
+                mapFileWrite.write('\n')
+            mapFileWrite.write('\n')
+        else:
+            # write level to file
+            for line in level:
+                mapFileWrite.write(line)
+                mapFileWrite.write('\n')
+            mapFileWrite.write('\n')
+    if levelNum == 0:
+        if levelMaps == []:
+            print "levelMaps is empty"
+            savedLvlNum = 1
+        # write newLevel to end of file
+        for line in newLevel:
+            mapFileWrite.write(line)
+            mapFileWrite.write('\n')
+    mapFileWrite.close()
+    return "Successfullly saved map", savedLvlNum
+
 
 if __name__=='__main__':
     main()
