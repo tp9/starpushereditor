@@ -300,7 +300,6 @@ def saveToFile(filename, mapTiles, levelNum):
             mapFileWrite.write('\n')
     if levelNum == 0:
         if levelMaps == []:
-            print "levelMaps is empty"
             savedLvlNum = 1
         # write newLevel to end of file
         for line in newLevel:
