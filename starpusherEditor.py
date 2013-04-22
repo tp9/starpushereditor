@@ -119,8 +119,16 @@ def main():
                 if event.key == K_ESCAPE:
                     pygame.quit()
                     sys.exit()
-                elif event.key == K_DELETE:
-                    print 'delete level' # reset the level
+                elif event.key == K_DELETE: # delete current level
+                    if levels != []:
+                        del levels[currentLvl-1]
+                        print updateSaveFile(saveFile, levels)
+                        if levels == []:
+                            currentLvl = 0
+                            mapTiles = [[None] * BOARDHEIGHT for i in range(BOARDWIDTH)]
+                        else:
+                            currentLvl = 1
+                            mapTiles = convertToTiles(levels[currentLvl-1])
                 elif event.key == K_n: # add new level
                     currentLvl = 0
                     mapTiles = [[None] * BOARDHEIGHT for i in range(BOARDWIDTH)]
@@ -285,12 +293,10 @@ def saveToFile(filename, mapTiles, levelNum):
                 char = ' '
             else:
                 char = tempMap[x][row]
-            # mapFile.write(char)
             line += char
         if not isEmptyLine:
             newLevel.append(line)
             line = ''
-            # mapFile.write('\n')
         else:
             isEmptyLine = False
     # read file and store in a list
@@ -324,6 +330,18 @@ def saveToFile(filename, mapTiles, levelNum):
     mapFileWrite.close()
     return "Successfullly saved map", savedLvlNum
 
+    
+def updateSaveFile(filename, levels):
+    assert os.path.exists(filename), 'Cannot find the level file: %s' % (filename)
+
+    mapFileWrite = open(filename, 'w')
+    for level in levels:
+        for line in level:
+            mapFileWrite.write(line)
+            mapFileWrite.write('\n')
+        mapFileWrite.write('\n')
+    return "Successfully updated save file"
+            
 
 if __name__=='__main__':
     main()
