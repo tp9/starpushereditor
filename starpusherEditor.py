@@ -127,12 +127,20 @@ def main():
                 elif event.key == K_s: # save current level
                     printMsg, currentLvl = saveToFile(saveFile, mapTiles, currentLvl)
                     levels = readLevelsFile(saveFile)
-                elif event.key == K_PAGEUP: # go to next map
-                    print 'previous level'
-                elif event.key == K_PAGEDOWN: # go to previous map
-                    print 'next level'
-                    currentLvl += 1
-                    mapTiles = convertToTiles(levels[currentLvl-1])
+                elif event.key == K_PAGEUP: # go to previous map
+                    if levels != []:
+                        if currentLvl <= 1:
+                            currentLvl = len(levels)
+                        else: 
+                            currentLvl -= 1
+                        mapTiles = convertToTiles(levels[currentLvl-1])
+                elif event.key == K_PAGEDOWN: # go to next map
+                    if levels != []:
+                        if currentLvl >= len(levels):
+                            currentLvl = 1
+                        else: 
+                            currentLvl += 1
+                        mapTiles = convertToTiles(levels[currentLvl-1])
             elif event.type == MOUSEBUTTONUP:
                 if event.button == 5:
                     objectIter -= 1
