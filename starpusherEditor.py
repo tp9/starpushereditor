@@ -34,11 +34,12 @@ WALLCOLOR   = YELLOW
 
 
 def main():
-    global DISPLAYSURF, OBJECTIMAGES, IMAGESDICT, MOUSEIMAGES
+    global DISPLAYSURF, OBJECTIMAGES, IMAGESDICT, MOUSEIMAGES, BASICFONT
     # set initial position of the game window
     os.environ['SDL_VIDEO_WINDOW_POS'] = "40,40"
     pygame.init()
     DISPLAYSURF = pygame.display.set_mode((WINDOWWIDTH, WINDOWHEIGHT))
+    BASICFONT = pygame.font.Font('freesansbold.ttf', 18)
     pygame.display.set_caption('Star Pusher Editor')
     saveFile = 'userMaps.txt'
     currentLvl = 0
@@ -103,6 +104,12 @@ def main():
             pygame.draw.line(DISPLAYSURF, DARKGRAY, (XMARGIN, y + YMARGIN), 
                 (WINDOWWIDTH - XMARGIN, y + YMARGIN))
                 
+        # draw level marker
+        levelSurf = BASICFONT.render('Level %s of %s' % (currentLvl, len(levels)), 1, TEXTCOLOR)
+        levelRect = levelSurf.get_rect()
+        levelRect.bottomleft = (20, WINDOWHEIGHT - 35)
+        DISPLAYSURF.blit(levelSurf, levelRect)
+        
         # event handler
         for event in pygame.event.get():
             if event.type == QUIT:
@@ -119,6 +126,7 @@ def main():
                     mapTiles = [[None] * BOARDHEIGHT for i in range(BOARDWIDTH)]
                 elif event.key == K_s: # save current level
                     printMsg, currentLvl = saveToFile(saveFile, mapTiles, currentLvl)
+                    levels = readLevelsFile(saveFile)
                 elif event.key == K_PAGEUP: # go to next map
                     print 'previous level'
                 elif event.key == K_PAGEDOWN: # go to previous map
