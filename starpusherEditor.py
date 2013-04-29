@@ -15,7 +15,8 @@ BOARDWIDTH = 10 # number of tiles per column
 BOARDHEIGHT = 10 # number of tiles per row
 MARGIN = 20
 TILESIZE = 50
-CAMERAMOVEMENT = 20
+CAMERAMOVEMENT = 1
+CAMERAMARGIN = 40
 
 # set margins
 XMARGIN = int((WINDOWWIDTH - (BOARDWIDTH * TILESIZE)) / 2)
@@ -82,7 +83,7 @@ def main():
         # draw tiles
         for tileX in range(BOARDWIDTH):
             for tileY in range(BOARDHEIGHT):
-                left, top = leftTopCoordsTile(tileX, tileY, cameraX)
+                left, top = leftTopCoordsTile(tileX, tileY, cameraX, cameraY)
                 if mapTiles[tileX][tileY] == '#':
                     pygame.draw.rect(DISPLAYSURF, WALLCOLOR, (left, top, 
                                      TILESIZE, TILESIZE))
@@ -100,11 +101,11 @@ def main():
                         
         # draw tile outlines
         for x in range(0, (BOARDWIDTH + 1) * TILESIZE, TILESIZE):
-            pygame.draw.line(DISPLAYSURF, DARKGRAY, (cameraX + x + XMARGIN, YMARGIN), 
-                (cameraX + x + XMARGIN, WINDOWHEIGHT - YMARGIN))
+            pygame.draw.line(DISPLAYSURF, DARKGRAY, (cameraX + x + XMARGIN, YMARGIN - cameraY), 
+                (cameraX + x + XMARGIN, WINDOWHEIGHT - cameraY - YMARGIN))
         for y in range(0, (BOARDHEIGHT + 1) * TILESIZE, TILESIZE):
-            pygame.draw.line(DISPLAYSURF, DARKGRAY, (cameraX + XMARGIN, y + YMARGIN), #(XMARGIN, y + YMARGIN), 
-                (WINDOWWIDTH - XMARGIN + cameraX, y + YMARGIN))
+            pygame.draw.line(DISPLAYSURF, DARKGRAY, (cameraX + XMARGIN, y + YMARGIN - cameraY), #(XMARGIN, y + YMARGIN), 
+                (WINDOWWIDTH - XMARGIN + cameraX, y + YMARGIN - cameraY))
                 
         # draw level marker
         levelSurf = BASICFONT.render('Level %s of %s' % (currentLvl, len(levels)), 1, TEXTCOLOR)
@@ -172,10 +173,37 @@ def main():
                     clickX, clickY = event.pos
             elif event.type == MOUSEMOTION:
                 mouseX, mouseY = event.pos
+                if  (mouseX > WINDOWWIDTH - CAMERAMARGIN and mouseX < WINDOWWIDTH - 1 and
+                    mouseY > CAMERAMARGIN and mouseY < WINDOWHEIGHT - CAMERAMARGIN):
+                    cameraRight = True
+                elif (mouseX < CAMERAMARGIN and mouseX > 0 and
+                    mouseY > CAMERAMARGIN and mouseY < WINDOWHEIGHT - CAMERAMARGIN):
+                    cameraLeft = True
+                elif (mouseY < CAMERAMARGIN and mouseY > 0 and
+                    mouseX > CAMERAMARGIN and mouseX < WINDOWWIDTH - CAMERAMARGIN):
+                    cameraUp = True
+                elif (mouseY > WINDOWHEIGHT - CAMERAMARGIN and mouseY < WINDOWHEIGHT - 1 and
+                    mouseX > CAMERAMARGIN and mouseX < WINDOWWIDTH - CAMERAMARGIN):
+                    cameraDown = True
+                else:
+                    cameraRight = False
+                    cameraLeft = False
+                    cameraUp = False
+                    cameraDown = False
+ 
+        # move camera
+        if cameraRight:
+            cameraX -= CAMERAMOVEMENT
+        elif cameraLeft:
+            cameraX += CAMERAMOVEMENT
+        elif cameraUp:
+            cameraY -= CAMERAMOVEMENT
+        elif cameraDown:
+            cameraY += CAMERAMOVEMENT            
                 
-        tileX, tileY = getTileAtPixel(mouseX, mouseY, cameraX)
+        tileX, tileY = getTileAtPixel(mouseX, mouseY, cameraX, cameraY)
         if tileX != None:
-            drawHighlightTile(tileX, tileY, cameraX)
+            drawHighlightTile(tileX, tileY, cameraX, cameraY)
             mouseImageX = mouseX - (MOUSEIMAGES[objectIter].get_width() / 2)
             mouseImageY = mouseY - (MOUSEIMAGES[objectIter].get_height() / 2)
             DISPLAYSURF.blit(MOUSEIMAGES[objectIter], (mouseImageX,mouseImageY))
@@ -189,7 +217,7 @@ def main():
         pygame.display.update()
 
         
-def leftTopCoordsTile(tilex, tiley, cameraX):
+def leftTopCoordsTile(tilex, tiley, cameraX, cameraY):
     '''
     returns left and top pixel coords
     tilex: int
@@ -197,11 +225,11 @@ def leftTopCoordsTile(tilex, tiley, cameraX):
     return: tuple (int, int)
     '''
     left = tilex * TILESIZE + XMARGIN + cameraX
-    top = tiley * TILESIZE + YMARGIN
+    top = tiley * TILESIZE + YMARGIN - cameraY
     return (left, top)
 
     
-def getTileAtPixel(x, y, cameraX):
+def getTileAtPixel(x, y, cameraX, cameraY):
     '''
     returns tile coordinates of pixel at top left, defaults to (None, None)
     x: int
@@ -210,19 +238,19 @@ def getTileAtPixel(x, y, cameraX):
     '''
     for tilex in range(BOARDWIDTH):
         for tiley in range(BOARDHEIGHT):
-            left, top = leftTopCoordsTile(tilex, tiley, cameraX)
+            left, top = leftTopCoordsTile(tilex, tiley, cameraX, cameraY)
             tile_rect = pygame.Rect(left, top, TILESIZE, TILESIZE)
             if tile_rect.collidepoint(x, y):
                 return (tilex, tiley)
     return (None, None)
     
     
-def drawHighlightTile(tilex, tiley, cameraX):
+def drawHighlightTile(tilex, tiley, cameraX, cameraY):
     '''
     tilex: int
     tiley: int
     '''
-    left, top = leftTopCoordsTile(tilex, tiley, cameraX)
+    left, top = leftTopCoordsTile(tilex, tiley, cameraX, cameraY)
     pygame.draw.rect(DISPLAYSURF, HIGHLIGHTCOLOR,
                     (left, top, TILESIZE, TILESIZE), 4)
 
