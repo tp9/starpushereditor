@@ -13,8 +13,8 @@ WINDOWWIDTH = 600 # width of the program's window, in pixels
 WINDOWHEIGHT = 600 # height in pixels
 BOARDWIDTH = 10 # number of tiles per column
 BOARDHEIGHT = 10 # number of tiles per row
-MARGIN = 20
-TILESIZE = 50
+MARGIN = 40
+TILESIZE = 60
 CAMERAMOVEMENT = 1
 CAMERAMARGIN = 40
 
@@ -51,12 +51,19 @@ def main():
     mouseImageY = 0
     leftButtonClicked = False
     rightButtonClicked = False
+    # set up camera
     cameraX = 0
     cameraY = 0
     cameraLeft = False
     cameraRight = False
     cameraUp = False
     cameraDown = False
+    assert(1==2) # need to implement screen tracking
+    mapWidth = len(mapObj) * TILEWIDTH
+    mapHeight = (len(mapObj[0]) - 1) * TILEFLOORHEIGHT + TILEHEIGHT
+    MAX_CAM_X_PAN = abs(HALF_WINHEIGHT - int(mapHeight / 2)) + TILEWIDTH
+    MAX_CAM_Y_PAN = abs(HALF_WINWIDTH - int(mapWidth / 2)) + TILEHEIGHT
+    
     objectIter = 0
     # read map file
     levels = readLevelsFile(saveFile)
@@ -101,11 +108,11 @@ def main():
                         
         # draw tile outlines
         for x in range(0, (BOARDWIDTH + 1) * TILESIZE, TILESIZE):
-            pygame.draw.line(DISPLAYSURF, DARKGRAY, (cameraX + x + XMARGIN, YMARGIN - cameraY), 
-                (cameraX + x + XMARGIN, WINDOWHEIGHT - cameraY - YMARGIN))
+            pygame.draw.line(DISPLAYSURF, DARKGRAY, (cameraX + x + MARGIN, MARGIN - cameraY), 
+                (cameraX + x + MARGIN, WINDOWHEIGHT - cameraY - MARGIN))
         for y in range(0, (BOARDHEIGHT + 1) * TILESIZE, TILESIZE):
-            pygame.draw.line(DISPLAYSURF, DARKGRAY, (cameraX + XMARGIN, y + YMARGIN - cameraY), #(XMARGIN, y + YMARGIN), 
-                (WINDOWWIDTH - XMARGIN + cameraX, y + YMARGIN - cameraY))
+            pygame.draw.line(DISPLAYSURF, DARKGRAY, (cameraX + MARGIN, y + MARGIN - cameraY), #(XMARGIN, y + YMARGIN), 
+                (WINDOWWIDTH - MARGIN + cameraX, y + MARGIN - cameraY))
                 
         # draw level marker
         levelSurf = BASICFONT.render('Level %s of %s' % (currentLvl, len(levels)), 1, TEXTCOLOR)
@@ -173,7 +180,7 @@ def main():
                     clickX, clickY = event.pos
             elif event.type == MOUSEMOTION:
                 mouseX, mouseY = event.pos
-                if  (mouseX > WINDOWWIDTH - CAMERAMARGIN and mouseX < WINDOWWIDTH - 1 and
+                if  (mouseX > WINDOWWIDTH - CAMERAMARGIN and mouseX < WINDOWWIDTH - 1 and 
                     mouseY > CAMERAMARGIN and mouseY < WINDOWHEIGHT - CAMERAMARGIN):
                     cameraRight = True
                 elif (mouseX < CAMERAMARGIN and mouseX > 0 and
@@ -192,13 +199,13 @@ def main():
                     cameraDown = False
  
         # move camera
-        if cameraRight:
+        if cameraRight and cameraX > -300:
             cameraX -= CAMERAMOVEMENT
-        elif cameraLeft:
+        elif cameraLeft and cameraX < 0:
             cameraX += CAMERAMOVEMENT
-        elif cameraUp:
+        elif cameraUp and cameraY > 0:
             cameraY -= CAMERAMOVEMENT
-        elif cameraDown:
+        elif cameraDown and cameraY < 300:
             cameraY += CAMERAMOVEMENT            
                 
         tileX, tileY = getTileAtPixel(mouseX, mouseY, cameraX, cameraY)
