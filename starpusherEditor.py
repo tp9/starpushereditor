@@ -11,16 +11,16 @@ from pygame.locals import *
 FPS = 30 # frames per second to update the screen
 WINDOWWIDTH = 600 # width of the program's window, in pixels
 WINDOWHEIGHT = 600 # height in pixels
-BOARDWIDTH = 10 # number of tiles per column
-BOARDHEIGHT = 10 # number of tiles per row
-MARGIN = 40
-TILESIZE = 60
+BOARDWIDTH = 12 # number of tiles per column
+BOARDHEIGHT = 12 # number of tiles per row
+MARGIN = 10
+TILESIZE = 50
 CAMERAMOVEMENT = 1
-CAMERAMARGIN = 40
+CAMERAMARGIN = 10
 
 # set margins
-XMARGIN = int((WINDOWWIDTH - (BOARDWIDTH * TILESIZE)) / 2)
-YMARGIN = int((WINDOWHEIGHT - (BOARDHEIGHT * TILESIZE)) / 2)
+# XMARGIN = int((WINDOWWIDTH - (BOARDWIDTH * TILESIZE)) / 2)
+# YMARGIN = int((WINDOWHEIGHT - (BOARDHEIGHT * TILESIZE)) / 2)
 
 CAM_MOVE_SPEED = 5 # how many pixels per frame the camera moves
 
@@ -58,11 +58,10 @@ def main():
     cameraRight = False
     cameraUp = False
     cameraDown = False
-    assert(1==2) # need to implement screen tracking
-    mapWidth = len(mapObj) * TILEWIDTH
-    mapHeight = (len(mapObj[0]) - 1) * TILEFLOORHEIGHT + TILEHEIGHT
-    MAX_CAM_X_PAN = abs(HALF_WINHEIGHT - int(mapHeight / 2)) + TILEWIDTH
-    MAX_CAM_Y_PAN = abs(HALF_WINWIDTH - int(mapWidth / 2)) + TILEHEIGHT
+    mapWidth = BOARDWIDTH * TILESIZE
+    mapHeight = BOARDHEIGHT * TILESIZE
+    MAXCAMXPAN = abs(int(WINDOWWIDTH / 2) - int(mapHeight / 2)) + 100
+    MAXCAMYPAN = abs(int(WINDOWHEIGHT / 2) - int(mapWidth / 2)) + 100
     
     objectIter = 0
     # read map file
@@ -87,6 +86,26 @@ def main():
     
     while True:
         DISPLAYSURF.fill(BGCOLOR)
+        
+        # draw tile outlines        
+        mapSurfWidth = BOARDWIDTH * TILESIZE + 1
+        mapSurfHeight = BOARDHEIGHT * TILESIZE + 1
+        mapSurf = pygame.Surface((mapSurfWidth, mapSurfHeight))
+        mapSurf.fill(BGCOLOR) # start with a blank color on the surface.
+                        
+        for x in range(0, (BOARDWIDTH + 1) * TILESIZE, TILESIZE):
+            pygame.draw.line(mapSurf, DARKGRAY, (x, 0), 
+                (x, mapHeight))
+        for y in range(0, (BOARDHEIGHT + 1) * TILESIZE, TILESIZE):
+            pygame.draw.line(mapSurf, DARKGRAY, (0, y), 
+                (mapWidth, y))
+        # Adjust mapSurf's Rect object based on the camera offset.
+        mapSurfRect = mapSurf.get_rect()
+        mapSurfRect.center = (int(WINDOWWIDTH / 2) + cameraX, int(WINDOWHEIGHT / 2) - cameraY)
+
+        # Draw mapSurf to the DISPLAYSURF Surface object.
+        DISPLAYSURF.blit(mapSurf, mapSurfRect)
+
         # draw tiles
         for tileX in range(BOARDWIDTH):
             for tileY in range(BOARDHEIGHT):
@@ -95,25 +114,16 @@ def main():
                     pygame.draw.rect(DISPLAYSURF, WALLCOLOR, (left, top, 
                                      TILESIZE, TILESIZE))
                 elif mapTiles[tileX][tileY] != None:
-                    imgRect = pygame.Rect((tileX * TILESIZE + XMARGIN, 
-                                           tileY * TILESIZE + YMARGIN, 
+                    imgRect = pygame.Rect((tileX * TILESIZE + TILESIZE + cameraX, 
+                                           tileY * TILESIZE + TILESIZE - cameraY, 
                                            TILESIZE, TILESIZE))
                     if mapTiles[tileX][tileY] == '$':
-                        print left, top, tileX, tileY
                         DISPLAYSURF.blit(IMAGESDICT['star'], imgRect)
                     elif mapTiles[tileX][tileY] == '@':
                         DISPLAYSURF.blit(IMAGESDICT['princess'], imgRect)
                     elif mapTiles[tileX][tileY] == '.':
                         DISPLAYSURF.blit(IMAGESDICT['uncovered goal'], imgRect)
-                        
-        # draw tile outlines
-        for x in range(0, (BOARDWIDTH + 1) * TILESIZE, TILESIZE):
-            pygame.draw.line(DISPLAYSURF, DARKGRAY, (cameraX + x + MARGIN, MARGIN - cameraY), 
-                (cameraX + x + MARGIN, WINDOWHEIGHT - cameraY - MARGIN))
-        for y in range(0, (BOARDHEIGHT + 1) * TILESIZE, TILESIZE):
-            pygame.draw.line(DISPLAYSURF, DARKGRAY, (cameraX + MARGIN, y + MARGIN - cameraY), #(XMARGIN, y + YMARGIN), 
-                (WINDOWWIDTH - MARGIN + cameraX, y + MARGIN - cameraY))
-                
+        
         # draw level marker
         levelSurf = BASICFONT.render('Level %s of %s' % (currentLvl, len(levels)), 1, TEXTCOLOR)
         levelRect = levelSurf.get_rect()
@@ -199,15 +209,16 @@ def main():
                     cameraDown = False
  
         # move camera
-        if cameraRight and cameraX > -300:
+        if cameraRight and cameraX > -MAXCAMYPAN:
             cameraX -= CAMERAMOVEMENT
-        elif cameraLeft and cameraX < 0:
+        elif cameraLeft and cameraX < MAXCAMYPAN:
             cameraX += CAMERAMOVEMENT
-        elif cameraUp and cameraY > 0:
+        elif cameraUp and cameraY > -MAXCAMXPAN:
             cameraY -= CAMERAMOVEMENT
-        elif cameraDown and cameraY < 300:
+        elif cameraDown and cameraY < MAXCAMXPAN:
             cameraY += CAMERAMOVEMENT            
                 
+        # draw events at mouse position
         tileX, tileY = getTileAtPixel(mouseX, mouseY, cameraX, cameraY)
         if tileX != None:
             drawHighlightTile(tileX, tileY, cameraX, cameraY)
@@ -231,8 +242,8 @@ def leftTopCoordsTile(tilex, tiley, cameraX, cameraY):
     tiley: int
     return: tuple (int, int)
     '''
-    left = tilex * TILESIZE + XMARGIN + cameraX
-    top = tiley * TILESIZE + YMARGIN - cameraY
+    left = tilex * TILESIZE + TILESIZE + cameraX
+    top = tiley * TILESIZE + TILESIZE - cameraY
     return (left, top)
 
     
