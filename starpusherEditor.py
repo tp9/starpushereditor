@@ -11,16 +11,12 @@ from pygame.locals import *
 FPS = 30 # frames per second to update the screen
 WINDOWWIDTH = 600 # width of the program's window, in pixels
 WINDOWHEIGHT = 600 # height in pixels
-BOARDWIDTH = 12 # number of tiles per column
-BOARDHEIGHT = 12 # number of tiles per row
+BOARDWIDTH = 10 # number of tiles per column
+BOARDHEIGHT = 10 # number of tiles per row
 MARGIN = 10
-TILESIZE = 50
+TILESIZE = 60
 CAMERAMOVEMENT = 1
 CAMERAMARGIN = 10
-
-# set margins
-# XMARGIN = int((WINDOWWIDTH - (BOARDWIDTH * TILESIZE)) / 2)
-# YMARGIN = int((WINDOWHEIGHT - (BOARDHEIGHT * TILESIZE)) / 2)
 
 CAM_MOVE_SPEED = 5 # how many pixels per frame the camera moves
 
@@ -48,7 +44,9 @@ def main():
     mouseX = 0
     mouseY = 0
     mouseImageX = 0
+    # cameraX = int((WINDOWWIDTH - (BOARDWIDTH * TILESIZE)) / 2)
     mouseImageY = 0
+    # cameraY = -int((WINDOWHEIGHT - (BOARDHEIGHT * TILESIZE)) / 2)
     leftButtonClicked = False
     rightButtonClicked = False
     # set up camera
@@ -99,9 +97,11 @@ def main():
         for y in range(0, (BOARDHEIGHT + 1) * TILESIZE, TILESIZE):
             pygame.draw.line(mapSurf, DARKGRAY, (0, y), 
                 (mapWidth, y))
+                
         # Adjust mapSurf's Rect object based on the camera offset.
         mapSurfRect = mapSurf.get_rect()
-        mapSurfRect.center = (int(WINDOWWIDTH / 2) + cameraX, int(WINDOWHEIGHT / 2) - cameraY)
+        mapSurfRect.topleft = (cameraX, -cameraY)
+        # mapSurfRect.center = (int(WINDOWWIDTH / 2) + cameraX, int(WINDOWHEIGHT / 2) - cameraY)
 
         # Draw mapSurf to the DISPLAYSURF Surface object.
         DISPLAYSURF.blit(mapSurf, mapSurfRect)
@@ -114,8 +114,8 @@ def main():
                     pygame.draw.rect(DISPLAYSURF, WALLCOLOR, (left, top, 
                                      TILESIZE, TILESIZE))
                 elif mapTiles[tileX][tileY] != None:
-                    imgRect = pygame.Rect((tileX * TILESIZE + TILESIZE + cameraX, 
-                                           tileY * TILESIZE + TILESIZE - cameraY, 
+                    imgRect = pygame.Rect((tileX * TILESIZE + cameraX, 
+                                           tileY * TILESIZE - cameraY, 
                                            TILESIZE, TILESIZE))
                     if mapTiles[tileX][tileY] == '$':
                         DISPLAYSURF.blit(IMAGESDICT['star'], imgRect)
@@ -242,8 +242,8 @@ def leftTopCoordsTile(tilex, tiley, cameraX, cameraY):
     tiley: int
     return: tuple (int, int)
     '''
-    left = tilex * TILESIZE + TILESIZE + cameraX
-    top = tiley * TILESIZE + TILESIZE - cameraY
+    left = tilex * TILESIZE  + cameraX
+    top = tiley * TILESIZE - cameraY
     return (left, top)
 
     
