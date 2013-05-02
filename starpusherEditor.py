@@ -5,7 +5,7 @@ A level designer for the game Star Pusher by Al Sweigart from his book
 'Making Games with Python & Pygame'
 http://inventwithpython.com/pygame/chapters/
 """
-import pygame, sys, os, copy, logging
+import pygame, sys, os, copy, logging, pprint
 from pygame.locals import *
 
 # logging.basicConfig(filename='logFile.txt', level=logging.DEBUG,
@@ -53,8 +53,6 @@ def main():
     # set up camera
     cameraX = 0
     cameraY = 0
-    # cameraX = int((WINDOWWIDTH - (BOARDWIDTH * TILESIZE)) / 2)
-    # cameraY = -int((WINDOWHEIGHT - (BOARDHEIGHT * TILESIZE)) / 2)
     cameraLeft = False
     cameraRight = False
     cameraUp = False
@@ -320,6 +318,7 @@ def saveToFile(filename, mapTiles, levelNum):
     newMap = copy.deepcopy(mapTiles)
     for x in newMap[:]:
         if set(OBJECTIMAGES).intersection(x) == set([]):
+            logging.debug(newMap)
             newMap.remove(x)
     tempMap = copy.deepcopy(newMap)
     if newMap == []:
@@ -339,24 +338,21 @@ def saveToFile(filename, mapTiles, levelNum):
                 
     # write list to file
     char = ''
-    isEmptyLine = False
+    isEmptyLine = True
     newLevel = []
     line = ''
     for row in range(len(tempMap[0])):
         for x in range(len(tempMap)):
-            if x == 0 and tempMap[x][row] == None:
-                isEmptyLine = True
-                break
-            elif tempMap[x][row] == None:
+            if tempMap[x][row] == None:
                 char = ' '
             else:
                 char = tempMap[x][row]
+                isEmptyLine = False
             line += char
         if not isEmptyLine:
             newLevel.append(line)
             line = ''
-        else:
-            isEmptyLine = False
+            isEmptyLine = True
     # read file and store in a list
     levelMaps = readLevelsFile(filename)
             
