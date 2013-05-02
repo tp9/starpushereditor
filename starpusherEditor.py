@@ -121,7 +121,6 @@ def main():
                 
         # Adjust mapSurf's Rect object based on the camera offset.
         mapSurfRect = mapSurf.get_rect()
-        # mapSurfRect.topleft = (cameraX, -cameraY)
         mapSurfRect.center = (int(WINDOWWIDTH / 2) + cameraX, int(WINDOWHEIGHT / 2) - cameraY)
         logging.info('mapSurfRect.center=' + str(mapSurfRect.center))
         logging.info('mapSurfRect.topleft=' + str(mapSurfRect.topleft))
@@ -178,21 +177,22 @@ def main():
                         else: 
                             currentLvl += 1
                         mapTiles = convertToTiles(levels[currentLvl-1])
-            elif event.type == MOUSEBUTTONUP and assert(1==2): # limit clicks to board
-                if event.button == 5:
-                    objectIter -= 1
-                    if objectIter < 0:
-                        objectIter = len(OBJECTIMAGES) - 1
-                elif event.button == 4:
-                    objectIter += 1
-                    if objectIter >= len(OBJECTIMAGES):
-                        objectIter = 0
-                elif event.button == 1:
-                    leftButtonClicked = True
-                    clickX, clickY = event.pos
-                elif event.button == 3:
-                    rightButtonClicked = True
-                    clickX, clickY = event.pos
+            elif event.type == MOUSEBUTTONUP:
+                clickX, clickY = event.pos
+                if (mapSurfRect.right > clickX > mapSurfRect.left and
+                   mapSurfRect.bottom > clickY > mapSurfRect.top):
+                    if event.button == 5:
+                        objectIter -= 1
+                        if objectIter < 0:
+                            objectIter = len(OBJECTIMAGES) - 1
+                    elif event.button == 4:
+                        objectIter += 1
+                        if objectIter >= len(OBJECTIMAGES):
+                            objectIter = 0
+                    elif event.button == 1:
+                        leftButtonClicked = True
+                    elif event.button == 3:
+                        rightButtonClicked = True
             elif event.type == MOUSEMOTION:
                 mouseX, mouseY = event.pos
                 if  (mouseX > WINDOWWIDTH - CAMERAMARGIN and mouseX < WINDOWWIDTH - 1 and 
