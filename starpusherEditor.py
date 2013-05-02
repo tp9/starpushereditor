@@ -5,9 +5,12 @@ A level designer for the game Star Pusher by Al Sweigart from his book
 'Making Games with Python & Pygame'
 http://inventwithpython.com/pygame/chapters/
 """
-import pygame, sys, os, copy
+import pygame, sys, os, copy, logging
 from pygame.locals import *
 
+# logging.basicConfig(filename='logFile.txt', level=logging.DEBUG,
+                    # format='%(asctime)s - %(levelname)s - %(message)s')
+                    
 FPS = 30 # frames per second to update the screen
 WINDOWWIDTH = 600 # width of the program's window, in pixels
 WINDOWHEIGHT = 600 # height in pixels
@@ -116,11 +119,21 @@ def main():
                     elif mapTiles[tileX][tileY] == '.':
                         mapSurf.blit(IMAGESDICT['uncovered goal'], imgRect)
                 
+        # Adjust mapSurf's Rect object based on the camera offset.
+        mapSurfRect = mapSurf.get_rect()
+        # mapSurfRect.topleft = (cameraX, -cameraY)
+        mapSurfRect.center = (int(WINDOWWIDTH / 2) + cameraX, int(WINDOWHEIGHT / 2) - cameraY)
+        logging.info('mapSurfRect.center=' + str(mapSurfRect.center))
+        logging.info('mapSurfRect.topleft=' + str(mapSurfRect.topleft))
+        logging.info('left, top=' + str(mapSurfRect.left) + ', ' + str(mapSurfRect.top))
+
+        # Draw mapSurf to the DISPLAYSURF Surface object.
+        DISPLAYSURF.blit(mapSurf, mapSurfRect)
+        
         # draw level marker
         levelSurf = BASICFONT.render('Level %s of %s' % (currentLvl, len(levels)), 1, TEXTCOLOR)
         levelRect = levelSurf.get_rect()
         levelRect.bottomleft = (20, WINDOWHEIGHT - 35)
-        DISPLAYSURF.blit(levelSurf, levelRect)
         
         # event handler
         for event in pygame.event.get():
@@ -165,7 +178,7 @@ def main():
                         else: 
                             currentLvl += 1
                         mapTiles = convertToTiles(levels[currentLvl-1])
-            elif event.type == MOUSEBUTTONUP:
+            elif event.type == MOUSEBUTTONUP and assert(1==2): # limit clicks to board
                 if event.button == 5:
                     objectIter -= 1
                     if objectIter < 0:
@@ -211,11 +224,13 @@ def main():
             cameraY += CAMERAMOVEMENT            
                 
         # draw events at mouse position
-        tileX, tileY = getTileAtPixel(mouseX, mouseY)
+        mapMouseX = mouseX - mapSurfRect.left
+        mapMouseY = mouseY - mapSurfRect.top
+        tileX, tileY = getTileAtPixel(mapMouseX, mapMouseY)
         if tileX != None:
             drawHighlightTile(tileX, tileY, mapSurf)
-            mouseImageX = mouseX - (MOUSEIMAGES[objectIter].get_width() / 2)
-            mouseImageY = mouseY - (MOUSEIMAGES[objectIter].get_height() / 2)
+            mouseImageX = mapMouseX - (MOUSEIMAGES[objectIter].get_width() / 2)
+            mouseImageY = mapMouseY - (MOUSEIMAGES[objectIter].get_height() / 2)
             mapSurf.blit(MOUSEIMAGES[objectIter], (mouseImageX,mouseImageY))
             if leftButtonClicked:
                 mapTiles[tileX][tileY] = OBJECTIMAGES[objectIter]
@@ -223,15 +238,9 @@ def main():
             if rightButtonClicked:
                 mapTiles[tileX][tileY] = None
                 rightButtonClicked = False
-                
-        # Adjust mapSurf's Rect object based on the camera offset.
-        mapSurfRect = mapSurf.get_rect()
-        # mapSurfRect.topleft = (cameraX, -cameraY)
-        mapSurfRect.center = (int(WINDOWWIDTH / 2) + cameraX, int(WINDOWHEIGHT / 2) - cameraY)
-
-        # Draw mapSurf to the DISPLAYSURF Surface object.
+                                
         DISPLAYSURF.blit(mapSurf, mapSurfRect)
-                
+        DISPLAYSURF.blit(levelSurf, levelRect)
         pygame.display.update()
 
         
@@ -254,7 +263,7 @@ def getTileAtPixel(x, y):
     y: int
     return: tuple (tilex, tiley)
     '''
-    assert(1==2) # need to tie Rect to mapSurf instead of window
+    # assert(1==2) # need to tie Rect to mapSurf instead of window
     for tilex in range(BOARDWIDTH):
         for tiley in range(BOARDHEIGHT):
             left, top = leftTopCoordsTile(tilex, tiley)
