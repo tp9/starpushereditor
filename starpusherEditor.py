@@ -143,10 +143,6 @@ def main():
                 if event.key == K_ESCAPE:
                     pygame.quit()
                     sys.exit()
-                elif event.key == K_LEFT:
-                    cameraX += CAMERAMOVEMENT
-                elif event.key == K_RIGHT:
-                    cameraX -= CAMERAMOVEMENT
                 elif event.key == K_DELETE: # delete current level
                     if levels != []:
                         del levels[currentLvl-1]
